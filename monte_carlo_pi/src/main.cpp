@@ -26,13 +26,19 @@ int main()
     float pi = classic_monte_carlo(numbers, a, b, radius);
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Sequential time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
-    std::cout << "classic pi = " << pi << std::endl;
+    std::cout << "sequential pi = " << pi << std::endl;
+
+    begin = std::chrono::steady_clock::now();
+    pi = man_parallel_monte_carlo(numbers, a, b, radius);
+    end = std::chrono::steady_clock::now();
+    std::cout << "Manual parallel time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
+    std::cout << "manual parallel pi = " << pi << std::endl;
 
     begin = std::chrono::steady_clock::now();
     pi = parallel_monte_carlo(numbers, a, b, radius);
     end = std::chrono::steady_clock::now();
-    std::cout << "Parallel time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
-    std::cout << "parallel pi = " << pi << std::endl;
+    std::cout << "Reduction parallel time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
+    std::cout << "reduction parallel pi = " << pi << std::endl;
 
     return 0;
 }
@@ -47,7 +53,7 @@ float get_random_number(float a, float b)
 
 float classic_monte_carlo(unsigned int numbers,float a,float b,float radius) 
 {
-    float counter = 0;
+    int counter = 0;
 
     for (int i = 0; i < numbers; i++)
     {
@@ -64,7 +70,7 @@ float classic_monte_carlo(unsigned int numbers,float a,float b,float radius)
 
 float parallel_monte_carlo(unsigned int numbers, float a, float b, float radius) 
 {
-    float counter = 0;
+    int counter = 0;
 
 #pragma omp parallel for reduction(+:counter)
     for (int i = 0; i < numbers; i++)
@@ -75,6 +81,28 @@ float parallel_monte_carlo(unsigned int numbers, float a, float b, float radius)
         if (distance < radius)
         {
             counter+=1;
+        }
+    }
+    return 4 * (counter / (float)(numbers));
+}
+
+float man_parallel_monte_carlo(unsigned int numbers, float a, float b, float radius) 
+{
+    int counter = 0;
+#pragma omp parallel 
+    {
+        int from = omp_get_thread_num()*numbers / omp_get_num_threads();
+        int to = (omp_get_thread_num() + 1)*numbers / omp_get_num_threads();
+        for (int i = from; i < to; i++) 
+        {
+            float rand_x = get_random_number(a, b);
+            float rand_y = get_random_number(a, b);
+            float distance = sqrt((double)(rand_x - 0.0)*(rand_x - 0.0) + (rand_y - 0.0)*(rand_y - 0.0));
+            if (distance < radius)
+            {
+#pragma omp atomic
+                counter += 1;
+            }
         }
     }
     return 4 * (counter / (float)(numbers));
