@@ -1,6 +1,7 @@
 #include <iostream>
 #include <omp.h>
 #include <chrono>
+#include <utilities.hpp>
 
 void assign_matrix(int** mat, unsigned int rows,unsigned int cols);
 void assign_vector(int* vec, unsigned int rows,bool is_result_vec);
@@ -36,19 +37,19 @@ int main()
     assign_vector(result, rows, true);
 
     //begin classic mul
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    classic_mul(vector, matrix, result, rows, cols);
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Sequential time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
+    utilities::timeit([&]()
+    {
+        classic_mul(vector, matrix, result, rows, cols);
+    });
 
     //reset result vector
     assign_vector(result, rows, true);
 
     //begin parallel mul
-    begin = std::chrono::steady_clock::now();
-    parallel_mul(vector, matrix, result, rows, cols);
-    end = std::chrono::steady_clock::now();
-    std::cout << "Parallel time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
+    utilities::timeit([&]()
+    {
+        parallel_mul(vector, matrix, result, rows, cols);
+    });
 
     //print only for small sizes
     if (rows < 10) 
@@ -73,9 +74,9 @@ int main()
 void assign_matrix(int** mat, unsigned int rows, unsigned int cols)
 {
 #pragma omp parallel for
-        for (int i = 0; i < rows; i++)
+        for (int i = 0; i < rows; ++i)
         {
-            for (int j = 0; j < cols; j++)
+            for (int j = 0; j < cols; ++j)
             {
                 mat[i][j] = rand() % 100 + i*j;
             }
@@ -94,7 +95,7 @@ void assign_matrix(int** mat, unsigned int rows, unsigned int cols)
 void assign_vector(int* vec, unsigned int rows, bool is_result_vec)
 {
 #pragma omp parallel for
-        for (int i = 0; i < rows; i++)
+        for (int i = 0; i < rows; ++i)
         {
             if (is_result_vec)
             {
@@ -124,9 +125,9 @@ void assign_vector(int* vec, unsigned int rows, bool is_result_vec)
 void classic_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned int cols)
 {
     //perform classic multiplication
-    for (int i = 0; i < rows; i++)
+    for (int i = 0; i < rows; ++i)
     {
-        for (int j = 0; j < cols; j++)
+        for (int j = 0; j < cols; ++j)
         {
             res_vec[i] += mat[i][j] * vec[j];
         }
@@ -137,9 +138,9 @@ void parallel_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned
 {
     //multiplication on threads
 #pragma omp parallel for
-        for (int i = 0; i < rows; i++)
+        for (int i = 0; i < rows; ++i)
         {
-            for (int j = 0; j < cols; j++)
+            for (int j = 0; j < cols; ++j)
             {
                 res_vec[i] += mat[i][j] * vec[j];
             }
@@ -150,9 +151,9 @@ void print_mat(int** mat, unsigned int rows, unsigned int cols)
 {
     std::cout << "matrix: " << std::endl;
     // print the matrix
-    for (int i = 0; i < rows; i++)
+    for (int i = 0; i < rows; ++i)
     {
-        for (int j = 0; j < cols; j++)
+        for (int j = 0; j < cols; ++j)
         {
             std::cout << mat[i][j] << " ";
         }
@@ -164,7 +165,7 @@ void print_vec(int* vec, unsigned int rows)
 {
     std::cout << "vector: " << std::endl;
     // print the vector
-    for (int i = 0; i < rows; i++)
+    for (int i = 0; i < rows; ++i)
     {
         std::cout << vec[i] << std::endl;
     }
