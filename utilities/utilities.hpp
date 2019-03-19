@@ -13,6 +13,8 @@ namespace utilities
     template <typename T, size_t N>
     size_t countof(const T(&v)[N])
     {
+        //static_assert(std::is_same_v<T, int>, "Only sizeof int vector");
         return N;
     }
+
 }

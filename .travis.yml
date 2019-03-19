@@ -1,0 +1,17 @@
+    language: cpp
+     
+    sudo: required
+    dist: xenial
+     
+    compiler:  
+        - gcc
+     
+    before_script:
+        - sudo apt-get install -y build-essential
+        - sudo apt-get install -y cmake
+        - mkdir build
+        - cd build 
+        - cmake ..
+     
+    script:
+        - make
