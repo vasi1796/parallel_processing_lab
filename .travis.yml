@@ -14,4 +14,4 @@
         - cmake ..
      
     script:
-        - make
+        - make 

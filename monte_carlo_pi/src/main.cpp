@@ -1,6 +1,7 @@
 #include <iostream>
 #include <omp.h>
 #include <chrono>
+#include <cmath>
 #include <utilities.hpp>
 
 float get_random_number(float a, float b);
