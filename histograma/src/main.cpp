@@ -6,7 +6,7 @@ void classic_histogram(int imgSize, int *hist,unsigned char *img);
 void parallel_histogram(int imgSize, int *hist, unsigned char *img);
 void print_histogram(int *hist);
 
-void main()
+int main()
 {
     // Alocarea de memorie pentru imagine
     int imgSize = 10000;
@@ -43,7 +43,8 @@ void main()
     // Dealocarea memoriei
     delete img;
     delete hist;
-    system("PAUSE");
+
+    return 0;
 }
 
 void classic_histogram(int imgSize, int *hist, unsigned char *img)
