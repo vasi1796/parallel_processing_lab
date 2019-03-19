@@ -1,171 +1,72 @@
-#include <iostream>
+﻿#include <iostream>
 #include <omp.h>
-#include <chrono>
+#include <utilities.hpp>
 
-void assign_matrix(int** mat, unsigned int rows,unsigned int cols);
-void assign_vector(int* vec, unsigned int rows,bool is_result_vec);
-void classic_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned int cols);
-void parallel_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned int cols);
-void print_mat(int** mat, unsigned int rows, unsigned int cols);
-void print_vec(int* vec, unsigned int rows);
+void classic_histogram(int imgSize, int *hist,unsigned char *img);
+void parallel_histogram(int imgSize, int *hist, unsigned char *img);
+void print_histogram(int *hist);
 
-int main() 
+void main()
 {
-    const unsigned int rows = 10'000;
-    const unsigned int cols = rows;
+    // Alocarea de memorie pentru imagine
+    int imgSize = 10000;
+    unsigned char *img = new unsigned char[imgSize*imgSize];
+    // Alocare de memorie pentru histogramă
+    int *hist = new int[256];
+    // Initializarea imaginii
+    for (int i = 0; i < imgSize; i++)
+        for (int j = 0; j < imgSize; j++)
+            img[i*imgSize + j] = i % 256;
 
-    //find number of threads fit for rows, should be improved
-    const short no_threads = 8;
-    omp_set_num_threads(no_threads);
-    std::cout << "working on " << no_threads << " threads."<< std::endl;
+    // Inițializarea histogramei
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    utilities::timeit([&]()
+    {
+        classic_histogram(imgSize, hist, img);
+    });
     
-    //create matrix
-    int** matrix = new int*[rows];
-    for (int i = 0; i < rows; ++i) 
+    print_histogram(hist);
+
+    // Inițializarea histogramei
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    utilities::timeit([&]()
     {
-        matrix[i] = new int[cols];
-    }
+        parallel_histogram(imgSize, hist, img);
+    });
 
-    //create vector and result
-    int* vector = new int[rows];
-    int* result = new int[rows];
-
-    //assign values to created matrix/vectors
-    assign_matrix(matrix,rows,cols);
-    assign_vector(vector, rows, false);
-    assign_vector(result, rows, true);
-
-    //begin classic mul
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    classic_mul(vector, matrix, result, rows, cols);
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "Sequential time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
-
-    //reset result vector
-    assign_vector(result, rows, true);
-
-    //begin parallel mul
-    begin = std::chrono::steady_clock::now();
-    parallel_mul(vector, matrix, result, rows, cols);
-    end = std::chrono::steady_clock::now();
-    std::cout << "Parallel time = " << std::chrono::duration_cast<std::chrono::milliseconds> (end - begin).count() << std::endl;
-
-    //print only for small sizes
-    if (rows < 10) 
-    {
-        print_mat(matrix, rows, cols);
-        print_vec(vector, rows);
-        print_vec(result, rows);
-    }
-
-    //deallocate memory
-    for (int i = 0; i < rows; ++i) 
-    {
-        delete[] matrix[i];
-    } 
-    delete[] matrix;
-    delete[] vector; 
-    delete[] result;
-
-    return 0;
+    print_histogram(hist);
+    
+    // Dealocarea memoriei
+    delete img;
+    delete hist;
+    system("PAUSE");
 }
 
-void assign_matrix(int** mat, unsigned int rows, unsigned int cols)
+void classic_histogram(int imgSize, int *hist, unsigned char *img)
 {
+    // Calcului histogramei
+    for (int i = 0; i < imgSize; i++)
+        for (int j = 0; j < imgSize; j++)
+            hist[img[i*imgSize + j]]++;
+}
+
+void parallel_histogram(int imgSize, int *hist, unsigned char *img)
+{
+    // Calcului histogramei
 #pragma omp parallel for
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                mat[i][j] = rand() % 100 + i*j;
-            }
-        }
-    //// assign values to allocated matrix, sequential
-    //for (int i = 0; i < rows; i++)
-    //{
-    //    for (int j = 0; j < cols; j++)
-    //    {
-    //        mat[i][j] = rand() % 100;
-    //    }
-
-    //}
+    for (int i = 0; i < imgSize; i++)
+        for (int j = 0; j < imgSize; j++)
+            hist[img[i*imgSize + j]]++;
 }
 
-void assign_vector(int* vec, unsigned int rows, bool is_result_vec)
+void print_histogram(int *hist) 
 {
-#pragma omp parallel for
-        for (int i = 0; i < rows; i++)
-        {
-            if (is_result_vec)
-            {
-                vec[i] = 0;
-            }
-            else
-            {
-                vec[i] = rand() % 100 + i;
-            }
-
-        }
-    ////assign values to allocated vector, sequential
-    //for (int i = 0; i < rows; i++)
-    //{
-    //    if (is_result_vec) 
-    //    {
-    //        vec[i] = 0;
-    //    }
-    //    else 
-    //    {
-    //        vec[i] = rand() % 100;
-    //    }
-    //    
-    //}
-}
-
-void classic_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned int cols)
-{
-    //perform classic multiplication
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            res_vec[i] += mat[i][j] * vec[j];
-        }
-    }
-}
-
-void parallel_mul(int* vec, int **mat, int* res_vec, unsigned int rows, unsigned int cols)
-{
-    //multiplication on threads
-#pragma omp parallel for
-        for (int i = 0; i < rows; i++)
-        {
-            for (int j = 0; j < cols; j++)
-            {
-                res_vec[i] += mat[i][j] * vec[j];
-            }
-        }
-}
-
-void print_mat(int** mat, unsigned int rows, unsigned int cols)
-{
-    std::cout << "matrix: " << std::endl;
-    // print the matrix
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-            std::cout << mat[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void print_vec(int* vec, unsigned int rows)
-{
-    std::cout << "vector: " << std::endl;
-    // print the vector
-    for (int i = 0; i < rows; i++)
-    {
-        std::cout << vec[i] << std::endl;
-    }
+    // Afișarea histogramei
+    for (int i = 0; i < 256; i++)
+        std::cout << hist[i] << " ";
+    std::cout << std::endl;
 }

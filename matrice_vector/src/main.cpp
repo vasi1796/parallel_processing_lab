@@ -1,6 +1,5 @@
 #include <iostream>
 #include <omp.h>
-#include <chrono>
 #include <utilities.hpp>
 
 void assign_matrix(int** mat, unsigned int rows,unsigned int cols);

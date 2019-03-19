@@ -1,6 +1,5 @@
 #include <iostream>
 #include <omp.h>
-#include <chrono>
 #include <cmath>
 #include <utilities.hpp>
 

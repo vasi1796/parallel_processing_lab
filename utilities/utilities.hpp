@@ -1,3 +1,5 @@
+#include <chrono>
+
 namespace utilities
 {
     template <typename Functor>
