@@ -8,6 +8,10 @@ void print_histogram(int *hist);
 
 int main()
 {
+    int a = 42;
+    a = a++;
+    printf("%d\n", a);
+
     // Alocarea de memorie pentru imagine
     int imgSize = 10000;
     unsigned char *img = new unsigned char[imgSize*imgSize];
@@ -37,6 +41,8 @@ int main()
     omp_set_num_threads(no_threads);
     std::cout << "working on " << no_threads << " threads." << std::endl;
     int *hist_thread = new int[256 * no_threads];
+    
+    // Initializarea histogramei paralele
     for (int i = 0; i < 256 * no_threads; ++i)
     {
         hist_thread[i] = 0;
@@ -50,8 +56,9 @@ int main()
     print_histogram(hist);
     
     // Dealocarea memoriei
-    delete img;
-    delete hist;
+    delete[] img;
+    delete[] hist;
+    delete[] hist_thread;
 
     return 0;
 }
@@ -77,6 +84,7 @@ void parallel_histogram(int imgSize, int *hist, unsigned char *img, int*hist_thr
         }
     }
     
+    // insumarea valorilor
     for (int i = 0; i < 256; ++i) 
     {
         for (int j = 0; j < no_threads; ++j) 
