@@ -55,10 +55,14 @@ int main()
     cudaMemcpy(a_d, a_h, size, cudaMemcpyHostToDevice);
 
     //dimensiuni grid si threads
-    dim3 grid(32,32,1);
-    dim3 thread(32,32,1);
+    const int thread_x = 32;
+    const int thread_y = 32;
+    const int grid_x = input_img.rows / thread_x + input_img.rows % thread_x;
+    const int grid_y = input_img.cols / thread_y + input_img.cols % thread_y;
+    dim3 grid(grid_x,grid_y,1);
+    dim3 thread(thread_y, thread_y,1);
 
-    median_filter <<<grid, thread>>> (a_d,b_d,1000,1000);
+    median_filter <<<grid, thread>>> (a_d,b_d,input_img.rows,input_img.cols);
 
     //copiere data pe host
     cudaMemcpy(a_h, b_d, size, cudaMemcpyDeviceToHost);
