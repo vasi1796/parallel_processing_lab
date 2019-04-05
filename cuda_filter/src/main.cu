@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <utilities.hpp>
 
 __global__ void median_filter(float *a,float *b, int N, int M, int win_size) 
 {
@@ -78,7 +79,7 @@ int main(int argc, char* argv[])
     dim3 grid(grid_x,grid_y,1);
     dim3 thread(thread_y, thread_y,1);
 
-    median_filter <<<grid, thread>>> (a_d,b_d,input_img.rows,input_img.cols,filter_size);
+    utilities::timeit([&] {median_filter << <grid, thread >> > (a_d, b_d, input_img.rows, input_img.cols, filter_size); });
 
     //copiere data pe host
     cudaMemcpy(a_h, b_d, size, cudaMemcpyDeviceToHost);
