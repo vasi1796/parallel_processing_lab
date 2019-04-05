@@ -32,22 +32,24 @@ __global__ void median_filter(float *a,float *b, int N, int M, int win_size)
 int main(int argc, char* argv[])
 {
     int filter_size;
-    if (argc > 1) 
+    cv::Mat input_img, filtered_img;
+
+    if (argc > 2) 
     {
         int size = atoi(argv[1]);
         if (size % 2) 
         {
             filter_size = size;
         }
+        input_img = cv::imread(argv[2], cv::IMREAD_GRAYSCALE);
     }
-    else 
+    else
     {
+        input_img = cv::imread("../../res/ex_sp.png", cv::IMREAD_GRAYSCALE);
         filter_size = 3;
     }
     
     float *a_h, *a_d, *b_d;
-    cv::Mat input_img,filtered_img;
-    input_img = cv::imread("D:/dev/Programming/School/PPD/res/ex_sp.png", cv::IMREAD_GRAYSCALE);
     cv::imshow("image unfiltered", input_img);
     input_img.convertTo(input_img, CV_32FC1);
     filtered_img.create(cv::Size(input_img.rows, input_img.cols), CV_32FC1);
