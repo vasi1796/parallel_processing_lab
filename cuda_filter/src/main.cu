@@ -10,10 +10,10 @@
 
 __global__ void median_filter(float *a,float *b, int N, int M, int win_size) 
 {
-    int row = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = blockIdx.y * blockDim.y + threadIdx.y;
-    int factor = win_size / 2;
-    float elems = win_size * win_size;
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+    const int col = blockIdx.y * blockDim.y + threadIdx.y;
+    const int factor = win_size / 2;
+    const float elems = win_size * win_size;
     if (row < (N - factor) && col < (M - factor) && row >= factor && col >= factor)
     {
         float sum = 0.f;
@@ -25,6 +25,35 @@ __global__ void median_filter(float *a,float *b, int N, int M, int win_size)
             }
         }
         b[row * N + col] = sum/ elems;
+    }
+}
+
+__global__ void shared_median_filter(float *a, float *b, int N, int M, int win_size)
+{
+    __shared__ float img_copy[32][32];
+    const int row = blockIdx.x * blockDim.x + threadIdx.x;
+    const int col = blockIdx.y * blockDim.y + threadIdx.y;
+    const int grid_i = threadIdx.x;
+    const int grid_j = threadIdx.y;
+    const int factor = win_size / 2;
+    const float elems = win_size * win_size;
+
+    if (row < N && col < M)
+    {
+        img_copy[grid_i][grid_j] = a[row*N + col];
+        __syncthreads();
+        if (grid_i < (32 - factor) && grid_j < (32 - factor) && grid_i >= factor && grid_j >= factor)
+        {
+            float sum = 0.f;
+            for (int i = grid_i - factor; i <= grid_i + factor; ++i)
+            {
+                for (int j = grid_j - factor; j <= grid_j + factor; ++j)
+                {
+                    sum += img_copy[i][j];
+                }
+            }
+            b[row * N + col] = sum / elems;
+        }
     }
 }
 
@@ -81,7 +110,8 @@ int main(int argc, char* argv[])
     dim3 grid(grid_x,grid_y,1);
     dim3 thread(thread_y, thread_y,1);
 
-    utilities::timeit([&] {median_filter << <grid, thread >> > (a_d, b_d, input_img.rows, input_img.cols, filter_size); });
+    //utilities::timeit([&] {median_filter <<< grid, thread >>> (a_d, b_d, input_img.rows, input_img.cols, filter_size); });
+    utilities::timeit([&] {shared_median_filter << < grid, thread >> > (a_d, b_d, input_img.rows, input_img.cols, filter_size); });
 
     //copiere data pe host
     cudaMemcpy(a_h, b_d, size, cudaMemcpyDeviceToHost);
